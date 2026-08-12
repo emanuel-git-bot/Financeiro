@@ -15,7 +15,8 @@
       "**/*"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.financeiro.mobile"
     },
     "android": {
       "package": "com.financeiro.mobile",
@@ -30,6 +31,12 @@
     },
     "plugins": [
       "expo-asset"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "977054bd-f29d-4c24-bb49-4f7ff15fd24b"
+      }
+    },
+    "owner": "emanuel-git-bot"
   }
 }
