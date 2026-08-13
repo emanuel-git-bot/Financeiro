@@ -8,7 +8,7 @@ export default function SummaryResult({ result }) {
     resumo,
     totalEntradasRealizado,
     limiteProporcional,
-    totalResgateCdb,
+    totalIgnorado,
     totalRedistribuir,
     ultrapassou,
   } = result;
@@ -37,7 +37,7 @@ export default function SummaryResult({ result }) {
       <View style={styles.stats}>
         <StatRow label="Total Entradas (Vendas Reais)" value={formatMoney(totalEntradasRealizado)} />
         <StatRow label="Limite Acumulado até hoje" value={formatMoney(limiteProporcional)} />
-        <StatRow label="Total em Resgates CDB (Ignorado no Teto)" value={formatMoney(totalResgateCdb)} />
+        <StatRow label="Total ignorado no teto (CDB / transferências internas)" value={formatMoney(totalIgnorado)} />
       </View>
 
       <View

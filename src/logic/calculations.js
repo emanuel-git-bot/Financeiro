@@ -17,16 +17,23 @@ function monthLabel(key) {
 
 /**
  * @param {{data: Date|null, entradas: number, saidas: number, descricao: string}[]} rows
+ * @param {{extraIgnoreKeywords?: string[]}} options - textos extras (ex: transferências
+ *   entre contas do mesmo usuário) que devem ser ignorados no teto, além de "Resgate de CDB".
  */
-export function computeSummary(rows) {
-  const isResgateCdb = (desc) =>
-    typeof desc === 'string' && desc.toLowerCase().includes('resgate de cdb');
+export function computeSummary(rows, { extraIgnoreKeywords = [] } = {}) {
+  const keywords = ['resgate de cdb', ...extraIgnoreKeywords.map((k) => k.toLowerCase().trim()).filter(Boolean)];
 
-  // Captura resgates de CDB ANTES de filtrar (mesma ordem do script original)
-  const resgateRows = rows.filter((r) => isResgateCdb(r.descricao));
-  const totalResgateCdb = resgateRows.reduce((acc, r) => acc + r.entradas, 0);
+  const isIgnorado = (desc) => {
+    if (typeof desc !== 'string') return false;
+    const d = desc.toLowerCase();
+    return keywords.some((k) => d.includes(k));
+  };
 
-  let filtered = rows.filter((r) => !isResgateCdb(r.descricao));
+  // Captura linhas ignoradas (CDB + filtros extras) ANTES de filtrar
+  const ignoradas = rows.filter((r) => isIgnorado(r.descricao));
+  const totalIgnorado = ignoradas.reduce((acc, r) => acc + r.entradas, 0);
+
+  let filtered = rows.filter((r) => !isIgnorado(r.descricao));
 
   // Remove linhas com data inválida
   filtered = filtered.filter((r) => r.data instanceof Date && !isNaN(r.data.getTime()));
@@ -73,7 +80,7 @@ export function computeSummary(rows) {
     resumo,
     totalEntradasRealizado,
     limiteProporcional,
-    totalResgateCdb,
+    totalIgnorado,
     totalRedistribuir,
     ultrapassou: totalEntradasRealizado > limiteProporcional,
   };

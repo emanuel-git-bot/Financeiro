@@ -8,9 +8,10 @@ import {
   parseDateFlexible,
   sampleValues,
 } from './excelUtils';
-import { computeSummary } from './calculations';
 
-export async function processPicPayFile(fileUri, fileName) {
+// Retorna as transações cruas (não calcula o resumo aqui) — quem chama decide
+// se mescla com dados já salvos antes de rodar computeSummary.
+export async function parsePicPayFile(fileUri, fileName) {
   const aoa = await readWorkbookRows(fileUri, fileName);
   if (!aoa || aoa.length === 0) {
     throw new Error('Arquivo vazio ou ilegível.');
@@ -42,5 +43,5 @@ export async function processPicPayFile(fileUri, fileName) {
     );
   }
 
-  return computeSummary(rows);
+  return rows;
 }
