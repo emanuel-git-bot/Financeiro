@@ -1,9 +1,14 @@
 import React from 'react';
 import { TouchableOpacity, Text, StyleSheet, View } from 'react-native';
 
-export default function BankCard({ label, color, onPress, subtitle }) {
+export default function BankCard({ label, color, onPress, onLongPress, subtitle }) {
   return (
-    <TouchableOpacity style={[styles.card, { borderColor: color }]} onPress={onPress} activeOpacity={0.7}>
+    <TouchableOpacity
+      style={[styles.card, { borderColor: color }]}
+      onPress={onPress}
+      onLongPress={onLongPress}
+      activeOpacity={0.7}
+    >
       <View style={[styles.dot, { backgroundColor: color }]} />
       <View style={{ flex: 1 }}>
         <Text style={styles.label}>{label}</Text>

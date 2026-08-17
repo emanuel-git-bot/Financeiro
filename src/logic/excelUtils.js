@@ -3,20 +3,26 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Buffer } from 'buffer';
 import * as XLSX from 'xlsx';
 
+// Lê um arquivo como texto puro (usado pelo parser de OFX, que não é tabular).
+export async function readTextFile(fileUri, encoding = 'utf8') {
+  const base64 = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.Base64 });
+  return Buffer.from(base64, 'base64').toString(encoding);
+}
+
 /**
  * Lê um arquivo (.xlsx/.xls ou .csv) e devolve uma matriz de linhas (array de arrays),
  * igual ao que pandas enxerga como um DataFrame cru, sem cabeçalho ainda aplicado.
  */
-export async function readWorkbookRows(fileUri, fileName) {
+export async function readWorkbookRows(fileUri, fileName, { csvEncoding = 'latin1', csvSeparator = ';' } = {}) {
   const isCsv = fileName.toLowerCase().endsWith('.csv');
   const base64 = await FileSystem.readAsStringAsync(fileUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
   if (isCsv) {
-    // picpay.py lê CSV com encoding='latin1'
-    const text = Buffer.from(base64, 'base64').toString('latin1');
-    return parseCsv(text, ';');
+    // picpay.py lê CSV com encoding='latin1'; outros bancos (ex: Nubank) usam utf-8.
+    const text = Buffer.from(base64, 'base64').toString(csvEncoding);
+    return parseCsv(text, csvSeparator);
   }
 
   const workbook = XLSX.read(base64, { type: 'base64', cellDates: true });
