@@ -30,7 +30,7 @@ const MIME_TYPES = {
 const HINTS = {
   picpay: 'Selecione o extrato exportado do PicPay (.xlsx ou .csv)',
   pagbank: 'Selecione o extrato exportado do PagBank (.xlsx)',
-  nubank: 'Selecione o extrato exportado do Nubank (.csv) — exporte mês a mês',
+  nubank: 'Selecione o(s) extrato(s) exportado(s) do Nubank (.csv) — pode escolher os arquivos de vários meses de uma vez',
   ofx: 'Selecione o arquivo .ofx exportado do banco',
 };
 
@@ -39,7 +39,7 @@ export default function AccountScreen({ route, navigation }) {
   const { user } = useUser();
 
   const [account, setAccount] = useState(null);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
   const [error, setError] = useState(null);
@@ -80,35 +80,54 @@ export default function AccountScreen({ route, navigation }) {
     const res = await DocumentPicker.getDocumentAsync({
       type: MIME_TYPES[account?.bankType] ?? ['*/*'],
       copyToCacheDirectory: true,
-      multiple: false,
+      multiple: true,
     });
     if (res.canceled) return;
-    const asset = res.assets && res.assets[0];
-    if (!asset) return;
-    setFile(asset);
+    const assets = res.assets ?? [];
+    if (assets.length === 0) return;
+    setFiles(assets);
   }, [account]);
 
   const processFile = useCallback(async () => {
-    if (!file || !account || !user) return;
+    if (files.length === 0 || !account || !user) return;
     setLoading(true);
     setError(null);
     setStatusMsg(null);
     try {
       const parse = PARSERS[account.bankType];
-      const newRows = await parse(file.uri, file.name);
-      const { rows, added, total } = await mergeTransactions(user.id, account.id, newRows);
+      const allNewRows = [];
+      const fileErrors = [];
+
+      for (const f of files) {
+        try {
+          const rows = await parse(f.uri, f.name);
+          allNewRows.push(...rows);
+        } catch (e) {
+          fileErrors.push(`${f.name}: ${e.message || e}`);
+        }
+      }
+
+      if (allNewRows.length === 0) {
+        throw new Error(fileErrors.join(' | ') || 'Nenhuma transação encontrada nos arquivos selecionados.');
+      }
+
+      const { rows, added, total } = await mergeTransactions(user.id, account.id, allNewRows);
       setResult(computeSummary(rows, { extraIgnoreKeywords: account.ignoreKeywords ?? [] }));
       setStatusMsg(
         added > 0
-          ? `${added} transação(ões) nova(s) adicionada(s). Total salvo: ${total}.`
-          : `Nenhuma transação nova (esse período já estava salvo). Total salvo: ${total}.`
+          ? `${added} transação(ões) nova(s) adicionada(s) de ${files.length} arquivo(s). Total salvo: ${total}.`
+          : `Nenhuma transação nova (esses períodos já estavam salvos). Total salvo: ${total}.`
       );
+      if (fileErrors.length > 0) {
+        setError(`${fileErrors.length} arquivo(s) com erro: ${fileErrors.join(' | ')}`);
+      }
+      setFiles([]);
     } catch (e) {
       setError(`Erro ao processar: ${e.message || e}`);
     } finally {
       setLoading(false);
     }
-  }, [file, account, user]);
+  }, [files, account, user]);
 
   const addKeyword = useCallback(
     async (kwArg) => {
@@ -178,17 +197,31 @@ export default function AccountScreen({ route, navigation }) {
         <Text style={styles.hint}>{HINTS[account.bankType] ?? 'Selecione o extrato'}</Text>
 
         <TouchableOpacity style={[styles.button, { backgroundColor: account.color }]} onPress={pickFile}>
-          <Text style={styles.buttonText}>Selecionar arquivo</Text>
+          <Text style={styles.buttonText}>Selecionar arquivo(s)</Text>
         </TouchableOpacity>
 
-        {file ? <Text style={styles.fileName}>Arquivo: {file.name}</Text> : null}
+        {files.length > 0 ? (
+          <View style={{ marginTop: 10 }}>
+            {files.map((f) => (
+              <Text key={f.uri} style={styles.fileName}>
+                Arquivo: {f.name}
+              </Text>
+            ))}
+          </View>
+        ) : null}
 
         <TouchableOpacity
-          style={[styles.button, styles.processButton, !file && styles.buttonDisabled]}
+          style={[styles.button, styles.processButton, files.length === 0 && styles.buttonDisabled]}
           onPress={processFile}
-          disabled={!file || loading}
+          disabled={files.length === 0 || loading}
         >
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Processar e salvar</Text>}
+          {loading ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={styles.buttonText}>
+              Processar e salvar{files.length > 1 ? ` (${files.length} arquivos)` : ''}
+            </Text>
+          )}
         </TouchableOpacity>
 
         {statusMsg ? <Text style={styles.status}>{statusMsg}</Text> : null}
