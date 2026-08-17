@@ -4,10 +4,10 @@
     "slug": "financeiro-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/icon.png.png",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/icon.png.png",
       "resizeMode": "contain",
       "backgroundColor": "#F7F8FA"
     },
@@ -21,13 +21,13 @@
     "android": {
       "package": "com.financeiro.mobile",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#F7F8FA"
+        "foregroundImage": "./assets/icon.png.png",
+        "backgroundColor": "#1C1C1E"
       }
     },
     "web": {
       "bundler": "metro",
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png.png"
     },
     "plugins": [
       "expo-asset"
